@@ -1,0 +1,15 @@
+name: bip32
+version: 0.1.0
+description: Library implementing BIP32
+author: Feathercoin Development Foundation <info@feathercoin.foundation>
+homepage: https://github.com/Feathercoin-Foundation/bip32
+
+dependencies:
+    pointycastle: ^1.0.0-rc3
+    base58check: ^1.0.1
+
+dev_dependencies:
+    test: ^1.3.0
+
+environment:
+    sdk: ">=2.0.0 <3.0.0"
