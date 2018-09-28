@@ -1,27 +1,31 @@
 import 'dart:typed_data';
 import 'dart:convert';
 
-import 'package:convert/convert.dart';
+import "package:base58check/base58.dart";
+import "package:convert/convert.dart";
 import "package:pointycastle/api.dart";
 import "package:pointycastle/macs/hmac.dart";
-import "package:pointycastle/digests/sha256.dart";
+import "package:pointycastle/digests/sha512.dart";
 
-final sha256digest = SHA256Digest();
+final sha512digest = SHA512Digest();
+
+const String alphabet =
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /// FirstHardenedChild is the index of the firxt "harded" child key as per the
 /// bip32 spec
-const int FirstHardenedChild = 0x80000000;
+const int firstHardenedChild = 0x80000000;
 
 /// PublicKeyCompressedLength is the byte count of a compressed public key
-const int PublicKeyCompressedLength = 33;
+const int publicKeyCompressedLength = 33;
 
 /// The 4 version bytes for the private key serialization as defined in the
 /// BIP21 spec
-final Uint8List PrivateKeyVersionBytes = hex.decode("0488ADE4");
+final Uint8List privateKeyVersionBytes = hex.decode("0488ADE4");
 
 /// The 4 version bytes for the public key serialization as defined in the
 /// BIP21 spec
-final Uint8List PublicKeyVersionBytes = hex.decode("0488B21E");
+final Uint8List publicKeyVersionBytes = hex.decode("0488B21E");
 
 /// From the BIP32 spec. Used when ... words...
 final Uint8List hmacKey = utf8.encoder.convert("Bitcoin Seed");
@@ -46,9 +50,42 @@ class Key {
 
   bool isPrivate;
 
-  Key(Uint8List seed) {
-    HMac hmac = HMac(sha256digest, 64)..init(KeyParameter(hmacKey));
+  Key.master(Uint8List seed) {
+    HMac hmac = HMac(sha512digest, 64)..init(KeyParameter(hmacKey));
     Uint8List intermediate = hmac.process(seed);
-    print(intermediate.length);
+
+    key = intermediate.sublist(0, 32);
+    chainCode = intermediate.sublist(32);
+    version = privateKeyVersionBytes;
+    depth = 0x0;
+    isPrivate = true;
+    fingerprint = Uint8List.fromList([0, 0, 0, 0]);
+    childNumber = Uint8List.fromList([0, 0, 0, 0]);
+  }
+
+  Key publicKey() {
+    return null;
+  }
+
+  Key childKey(int pathFragment) {
+    return null;
+  }
+
+  Uint8List serialize() {
+    List<int> serialization = List<int>();
+    serialization.addAll(version);
+    serialization.add(depth);
+    serialization.addAll(fingerprint);
+    serialization.addAll(childNumber);
+    serialization.addAll(chainCode);
+    serialization.add(0); // TODO only if private!
+    serialization.addAll(key);
+
+    return Uint8List.fromList(serialization);
+  }
+
+  @override
+  String toString() {
+    return Base58Codec(alphabet).encode(serialize());
   }
 }

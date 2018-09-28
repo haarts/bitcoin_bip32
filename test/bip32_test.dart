@@ -121,7 +121,7 @@ void main() {
     test("testing vector", () {
       Uint8List seed = hex.decoder.convert(vector["seed"]);
 
-      Key privateKey = Key(seed);
+      Key privateKey = Key.master(seed);
       Key publicKey = privateKey.publicKey();
 
       expect(privateKey.toString(), vector["privKey"]);
