@@ -2,11 +2,14 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import "package:base58check/base58.dart";
+import "package:base58check/base58check.dart";
 import "package:convert/convert.dart";
 import "package:pointycastle/api.dart";
 import "package:pointycastle/macs/hmac.dart";
+import "package:pointycastle/digests/sha256.dart";
 import "package:pointycastle/digests/sha512.dart";
 
+final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
 
 const String alphabet =
@@ -71,7 +74,7 @@ class Key {
     return null;
   }
 
-  Uint8List serialize() {
+  List<int> serialize() {
     List<int> serialization = List<int>();
     serialization.addAll(version);
     serialization.add(depth);
@@ -81,11 +84,16 @@ class Key {
     serialization.add(0); // TODO only if private!
     serialization.addAll(key);
 
-    return Uint8List.fromList(serialization);
+    return serialization;
   }
 
   @override
   String toString() {
-    return Base58Codec(alphabet).encode(serialize());
+    var payload = serialize();
+    var checksum = sha256digest
+        .process(sha256digest.process(Uint8List.fromList(payload)))
+        .getRange(0, 4);
+    payload.addAll(checksum);
+    return Base58Codec(alphabet).encode(payload);
   }
 }
