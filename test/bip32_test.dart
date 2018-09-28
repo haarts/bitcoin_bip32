@@ -1,5 +1,9 @@
-import "dart:test";
-import "dart:convert";
+import 'dart:typed_data';
+
+import 'package:convert/convert.dart';
+import "package:test/test.dart";
+
+import "package:bip32/bip32.dart";
 
 void main() {
   const firstHardenedChild = 0x80000000;
@@ -115,7 +119,7 @@ void main() {
 
   [vector1, vector2, vector3].forEach((vector) {
     test("testing vector", () {
-      seed = hex.decoder.convert(vector["seed"]);
+      Uint8List seed = hex.decoder.convert(vector["seed"]);
 
       Key privateKey = Key(seed);
       Key publicKey = privateKey.publicKey();
