@@ -8,9 +8,13 @@ import "package:pointycastle/api.dart";
 import "package:pointycastle/macs/hmac.dart";
 import "package:pointycastle/digests/sha256.dart";
 import "package:pointycastle/digests/sha512.dart";
+import "package:pointycastle/ecc/curves/secp256k1.dart";
+import "package:pointycastle/ecc/api.dart";
 
 final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
+
+final curve = ECCurve_secp256k1();
 
 const String alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -24,14 +28,33 @@ const int publicKeyCompressedLength = 33;
 
 /// The 4 version bytes for the private key serialization as defined in the
 /// BIP21 spec
-final Uint8List privateKeyVersionBytes = hex.decode("0488ADE4");
+final Uint8List privateKeyVersion = hex.decode("0488ADE4");
 
 /// The 4 version bytes for the public key serialization as defined in the
 /// BIP21 spec
-final Uint8List publicKeyVersionBytes = hex.decode("0488B21E");
+final Uint8List publicKeyVersion = hex.decode("0488B21E");
 
 /// From the BIP32 spec. Used when calculating the hmac of the seed
 final Uint8List hmacKey = utf8.encoder.convert("Bitcoin seed");
+
+/// From https://github.com/dart-lang/sdk/issues/32803#issuecomment-387405784
+BigInt readBytes(Uint8List bytes) {
+  BigInt read(int start, int end) {
+    if (end - start <= 4) {
+      int result = 0;
+      for (int i = end - 1; i >= start; i--) {
+        result = result * 256 + bytes[i];
+      }
+      return BigInt.from(result);
+    }
+    int mid = start + ((end - start) >> 1);
+    var result =
+        read(start, mid) + read(mid, end) * (BigInt.one << ((mid - start) * 8));
+    return result;
+  }
+
+  return read(0, bytes.length);
+}
 
 class Key {
   // 33 bytes
@@ -59,15 +82,45 @@ class Key {
 
     key = intermediate.sublist(0, 32);
     chainCode = intermediate.sublist(32);
-    version = privateKeyVersionBytes;
+    version = privateKeyVersion;
     depth = 0x0;
     isPrivate = true;
     fingerprint = Uint8List.fromList([0, 0, 0, 0]);
     childNumber = Uint8List.fromList([0, 0, 0, 0]);
   }
 
+  Key.public({
+    this.key,
+    this.depth,
+    this.childNumber,
+    this.fingerprint,
+    this.chainCode,
+  })  : isPrivate = false,
+        version = publicKeyVersion;
+
   Key publicKey() {
-    return null;
+    var keyBytes = key;
+
+    if (isPrivate) {
+      keyBytes = Key.publicKeyForPrivateKey(keyBytes);
+    }
+
+    return Key.public(
+      key: keyBytes,
+      depth: depth,
+      childNumber: childNumber,
+      fingerprint: fingerprint,
+      chainCode: chainCode,
+    );
+  }
+
+  // NOTE I honestly don't know why I need to reverse the list.
+  static Uint8List publicKeyForPrivateKey(Uint8List key) {
+    return ECPublicKey(
+            curve.G * readBytes(Uint8List.fromList(key.reversed.toList())),
+            curve)
+        .Q
+        .getEncoded(true);
   }
 
   Key childKey(int pathFragment) {
@@ -81,7 +134,9 @@ class Key {
     serialization.addAll(fingerprint);
     serialization.addAll(childNumber);
     serialization.addAll(chainCode);
-    serialization.add(0); // TODO only if private!
+    if (isPrivate) {
+      serialization.add(0);
+    }
     serialization.addAll(key);
 
     return serialization;
