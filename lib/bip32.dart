@@ -30,8 +30,8 @@ final Uint8List privateKeyVersionBytes = hex.decode("0488ADE4");
 /// BIP21 spec
 final Uint8List publicKeyVersionBytes = hex.decode("0488B21E");
 
-/// From the BIP32 spec. Used when ... words...
-final Uint8List hmacKey = utf8.encoder.convert("Bitcoin Seed");
+/// From the BIP32 spec. Used when calculating the hmac of the seed
+final Uint8List hmacKey = utf8.encoder.convert("Bitcoin seed");
 
 class Key {
   // 33 bytes
@@ -54,7 +54,7 @@ class Key {
   bool isPrivate;
 
   Key.master(Uint8List seed) {
-    HMac hmac = HMac(sha512digest, 64)..init(KeyParameter(hmacKey));
+    HMac hmac = HMac(sha512digest, 128)..init(KeyParameter(hmacKey));
     Uint8List intermediate = hmac.process(seed);
 
     key = intermediate.sublist(0, 32);
