@@ -112,7 +112,9 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
 Uint8List _derivePublicMessage(Uint8List key, int childNumber) {
   Uint8List message = Uint8List(37);
   message.setAll(0, key);
-  message.setAll(34, serializeTo4bytes(childNumber));
+  message.setAll(33, serializeTo4bytes(childNumber));
+
+  return message;
 }
 
 /// This function returns a list of length 64. The first half is the key, the
