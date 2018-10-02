@@ -22,6 +22,15 @@ final curve = ECCurve_secp256k1();
 const String alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
+/// From the specficiation:
+/// 4 version
+/// 1 depth
+/// 4 fingerprint
+/// 4 child number
+/// 32 chain code
+/// 33 public or private key
+const int lengthOfKey = 82;
+
 /// FirstHardenedChild is the index of the firxt "harded" child key as per the
 /// bip32 spec
 const int firstHardenedChild = 0x80000000;
@@ -136,6 +145,21 @@ Uint8List _rightFrom(Uint8List list) {
   return list.sublist(32);
 }
 
+// NOTE wow, this is annoying
+bool equal(List<int> a, List<int> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 abstract class ExtendedKey {
   // 33 bytes, big endian
   Uint8List key;
@@ -159,6 +183,19 @@ abstract class ExtendedKey {
     this.childNumber,
     this.chainCode,
   });
+
+  factory ExtendedKey.deserialize(String key) {
+    List<int> decodedKey = Base58Codec(alphabet).decode(key);
+    if (decodedKey.length != lengthOfKey) {
+      throw Exception("key not of length $lengthOfKey");
+    }
+
+    if (equal(decodedKey.getRange(0, 4).toList(), privateKeyVersion.toList())) {
+      return ExtendedPrivateKey.deserialize(decodedKey);
+    }
+
+    return ExtendedPublicKey.deserialize(decodedKey);
+  }
 
   Uint8List get fingerprint {
     if (isMaster) {
@@ -197,10 +234,10 @@ abstract class ExtendedKey {
 
 class ExtendedPrivateKey extends ExtendedKey {
   ExtendedPrivateKey({
-    key,
-    depth,
-    childNumber,
-    chainCode,
+    Uint8List key,
+    int depth,
+    int childNumber,
+    Uint8List chainCode,
   }) : super(
             version: privateKeyVersion,
             key: key,
@@ -215,6 +252,17 @@ class ExtendedPrivateKey extends ExtendedKey {
     chainCode = _rightFrom(hash);
     depth = 0;
     childNumber = 0;
+  }
+
+  factory ExtendedPrivateKey.deserialize(Uint8List key) {
+    return ExtendedPrivateKey(
+      depth: key[4],
+      childNumber:
+          ByteData.view(Uint8List.fromList(key.getRange(9, 13).toList()).buffer)
+              .getInt32(0),
+      key: Uint8List.fromList(key.getRange(46, 78).toList()),
+      chainCode: Uint8List.fromList(key.getRange(13, 45).toList()),
+    );
   }
 
   ExtendedPublicKey publicKey() {
