@@ -67,7 +67,7 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
 
   // TODO iff childPrivateKey is zero throw exception
-  BigInt childPrivateKey = leftSide * utils.decodeBigInt(key.key) % curve.n;
+  BigInt childPrivateKey = (leftSide + utils.decodeBigInt(key.key)) % curve.n;
 
   Uint8List chainCode = _rightFrom(hash);
 
