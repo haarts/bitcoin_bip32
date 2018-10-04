@@ -299,6 +299,17 @@ class ExtendedPublicKey extends ExtendedKey {
             childNumber: childNumber,
             chainCode: chainCode);
 
+  factory ExtendedPublicKey.deserialize(Uint8List key) {
+    return ExtendedPublicKey(
+      depth: key[4],
+      childNumber:
+          ByteData.view(Uint8List.fromList(key.getRange(9, 13).toList()).buffer)
+              .getInt32(0),
+      key: Uint8List.fromList(key.getRange(46, 78).toList()),
+      chainCode: Uint8List.fromList(key.getRange(13, 45).toList()),
+    );
+  }
+
   @override
   List<int> _serializedKey() {
     return key.toList();

@@ -140,26 +140,16 @@ void main() {
   });
 
   test("(de)serialization", () {
-    var seedToBase58Pairs = [
-      {
-        "seed": Uint8List.fromList([]),
-        "serialization":
-            "xprv9s21ZrQH143K4YUcKrp6cVxQaX59ZFkN6MFdeZjt8CHVYNs55xxQSvZpHWfojWMv6zgjmzopCyWPSFAnV4RU33J4pwCcnhsB4R4mPEnTsMC",
-        "seed": Uint8List.fromList([1]),
-        "serialization":
-            "xprv9s21ZrQH143K3YSbAXLMPCzJso5QAarQksAGc5rQCyZCBfw4Rj2PqVLFNgezSBhktYkiL3Ta2stLPDF9yZtLMaxk6Spiqh3DNFG8p8MVeEC",
-        "seed": Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 0]),
-        "serialization":
-            "xprv9s21ZrQH143K2hKT3jMKPFEcQLbx2XD55NtqQA7B4C5U9mTZY7gBeCdoFgurN4pxkQshzP8AQhBmUNgAo5djj5FzvUFh5pKH6wcRMSXVuc1",
-      }
+    var serializations = [
+      "xprv9s21ZrQH143K4YUcKrp6cVxQaX59ZFkN6MFdeZjt8CHVYNs55xxQSvZpHWfojWMv6zgjmzopCyWPSFAnV4RU33J4pwCcnhsB4R4mPEnTsMC",
+      "xprv9s21ZrQH143K3YSbAXLMPCzJso5QAarQksAGc5rQCyZCBfw4Rj2PqVLFNgezSBhktYkiL3Ta2stLPDF9yZtLMaxk6Spiqh3DNFG8p8MVeEC",
+      "xprv9s21ZrQH143K2hKT3jMKPFEcQLbx2XD55NtqQA7B4C5U9mTZY7gBeCdoFgurN4pxkQshzP8AQhBmUNgAo5djj5FzvUFh5pKH6wcRMSXVuc1",
+      "xpub661MyMwAqRbcEZVB4dScxMAdx6d4nFc9nvyvH3v4gJL378CSRZiYmhRoP7mBy6gSPSCYk6SzXPTf3ND1cZAceL7SfJ1Z3GC8vBgp2epUt13",
     ];
 
-    seedToBase58Pairs.forEach((pair) {
-      var key = ExtendedPrivateKey.master(pair["seed"]);
-      expect(key.toString(), pair["serialization"]);
-
-      expect(ExtendedKey.deserialize(pair["serialization"]).toString(),
-          pair["serialization"]);
+    serializations.forEach((serialization) {
+      print(ExtendedKey.deserialize(serialization).runtimeType);
+      expect(ExtendedKey.deserialize(serialization).toString(), serialization);
     });
   });
 }
