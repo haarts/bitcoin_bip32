@@ -159,13 +159,13 @@ Uint8List _rightFrom(Uint8List list) {
 }
 
 // NOTE wow, this is annoying
-bool equal(List<int> a, List<int> b) {
+bool equal(Iterable a, Iterable b) {
   if (a.length != b.length) {
     return false;
   }
 
   for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) {
+    if (a.elementAt(i) != b.elementAt(i)) {
       return false;
     }
   }
@@ -206,7 +206,7 @@ abstract class ExtendedKey {
       throw Exception("key not of length $lengthOfSerializedKey");
     }
 
-    if (equal(decodedKey.getRange(0, 4).toList(), privateKeyVersion.toList())) {
+    if (equal(decodedKey.getRange(0, 4), privateKeyVersion)) {
       return ExtendedPrivateKey.deserialize(decodedKey);
     }
 
@@ -229,13 +229,20 @@ abstract class ExtendedKey {
 
   List<int> _serializedKey();
 
+  bool verifyChecksum(Uint8List externalChecksum) {
+    return equal(_checksum(), externalChecksum.toList());
+  }
+
+  Iterable<int> _checksum() {
+    return sha256digest
+        .process(sha256digest.process(Uint8List.fromList(_serialize())))
+        .getRange(0, 4);
+  }
+
   @override
   String toString() {
     List<int> payload = _serialize();
-    var checksum = sha256digest
-        .process(sha256digest.process(Uint8List.fromList(payload)))
-        .getRange(0, 4);
-    payload.addAll(checksum);
+    payload.addAll(_checksum());
 
     return Base58Codec(alphabet).encode(payload);
   }
@@ -268,14 +275,19 @@ class ExtendedPrivateKey extends ExtendedKey {
   }
 
   factory ExtendedPrivateKey.deserialize(Uint8List key) {
-    // TODO verify checksum
-    return ExtendedPrivateKey(
+    var extendedPrivateKey = ExtendedPrivateKey(
       depth: key[4],
       parentFingerprint: sublist(key, 5, 9),
       childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
       chainCode: sublist(key, 13, 45),
       key: utils.decodeBigInt(sublist(key, 46, 78)),
     );
+
+    if (!extendedPrivateKey.verifyChecksum(sublist(key, 78, 82))) {
+      throw Exception("checksum invalid");
+    }
+
+    return extendedPrivateKey;
   }
 
   ExtendedPublicKey publicKey() {
