@@ -141,17 +141,29 @@ void main() {
   });
 
   group("derive public child key from public key", () {
-    ExtendedPublicKey key = ExtendedKey.deserialize(vector1["pubKey"]);
+    ExtendedPublicKey parent = ExtendedKey.deserialize(vector2["pubKey"]);
 
     test("refuse to generate a hardened child for a extended public key", () {
-      expect(() => deriveExtendedPublicChildKey(key, firstHardenedChild),
+      expect(() => deriveExtendedPublicChildKey(parent, firstHardenedChild),
           throwsA(isInstanceOf<InvalidChildNumber>()));
     });
 
-    test("generate a child public key", () {
-      var childKey = deriveExtendedPublicChildKey(key, 1);
+    test("generate child public key 0", () {
+      var childKey = deriveExtendedPublicChildKey(parent, 0);
 
-      expect(childKey.toString(), vector1["children"][1]["pubKey"]);
+      expect(childKey.toString(), vector2["children"][0]["pubKey"]);
+    });
+
+    test("generate child public key 1", () {
+      var childKey = deriveExtendedPublicChildKey(parent, 1);
+
+      expect(childKey.toString(), vector2["children"][2]["pubKey"]);
+    });
+
+    test("generate child public key 2", () {
+      var childKey = deriveExtendedPublicChildKey(parent, 2);
+
+      expect(childKey.toString(), vector2["children"][4]["pubKey"]);
     });
   });
 
