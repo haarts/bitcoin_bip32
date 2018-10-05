@@ -268,12 +268,13 @@ class ExtendedPrivateKey extends ExtendedKey {
   }
 
   factory ExtendedPrivateKey.deserialize(Uint8List key) {
+    // TODO verify checksum
     return ExtendedPrivateKey(
       depth: key[4],
       parentFingerprint: sublist(key, 5, 9),
       childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
-      key: utils.decodeBigInt(sublist(key, 46, 78)),
       chainCode: sublist(key, 13, 45),
+      key: utils.decodeBigInt(sublist(key, 46, 78)),
     );
   }
 
@@ -318,7 +319,14 @@ class ExtendedPublicKey extends ExtendedKey {
             chainCode: chainCode);
 
   factory ExtendedPublicKey.deserialize(Uint8List key) {
-    // TODO need to uncompress the pubkey
+    // TODO verify checksum
+    return ExtendedPublicKey(
+      depth: key[4],
+      parentFingerprint: sublist(key, 5, 9),
+      childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
+      chainCode: sublist(key, 13, 45),
+      q: _decodeCompressedECPoint(sublist(key, 45, 78)),
+    );
   }
 
   @override
@@ -330,6 +338,10 @@ class ExtendedPublicKey extends ExtendedKey {
   @override
   List<int> _serializedKey() {
     return compressed(q).toList();
+  }
+
+  static ECPoint _decodeCompressedECPoint(Uint8List encodedPoint) {
+    return curve.curve.decodePoint(encodedPoint.toList());
   }
 }
 

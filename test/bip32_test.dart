@@ -17,7 +17,7 @@ void main() {
         "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
     "children": [
       {
-        "childNumber": firstHardenedChild,
+        "childNumber": 0 + firstHardenedChild,
         "pubKey":
             "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw",
         "privKey":
@@ -119,7 +119,7 @@ void main() {
   };
 
   [vector1, vector2, vector3].forEach((vector) {
-    test("testing vector", () {
+    test("static vector", () {
       Uint8List seed = hex.decoder.convert(vector["seed"]);
 
       var privateKey = ExtendedPrivateKey.master(seed);
@@ -139,17 +139,33 @@ void main() {
     });
   });
 
-  test("(de)serialization", () {
-    var serializations = [
-      "xprv9s21ZrQH143K4YUcKrp6cVxQaX59ZFkN6MFdeZjt8CHVYNs55xxQSvZpHWfojWMv6zgjmzopCyWPSFAnV4RU33J4pwCcnhsB4R4mPEnTsMC",
-      "xprv9s21ZrQH143K3YSbAXLMPCzJso5QAarQksAGc5rQCyZCBfw4Rj2PqVLFNgezSBhktYkiL3Ta2stLPDF9yZtLMaxk6Spiqh3DNFG8p8MVeEC",
-      "xprv9s21ZrQH143K2hKT3jMKPFEcQLbx2XD55NtqQA7B4C5U9mTZY7gBeCdoFgurN4pxkQshzP8AQhBmUNgAo5djj5FzvUFh5pKH6wcRMSXVuc1",
-      "xpub661MyMwAqRbcEZVB4dScxMAdx6d4nFc9nvyvH3v4gJL378CSRZiYmhRoP7mBy6gSPSCYk6SzXPTf3ND1cZAceL7SfJ1Z3GC8vBgp2epUt13",
-    ];
+  group("(de)serialization", () {
+    test("private master key", () {
+      String serializedKey =
+          "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi";
 
-    serializations.forEach((serialization) {
-      print(ExtendedKey.deserialize(serialization).runtimeType);
-      expect(ExtendedKey.deserialize(serialization).toString(), serialization);
+      expect(ExtendedKey.deserialize(serializedKey).toString(), serializedKey);
+    });
+
+    test("public master key", () {
+      String serializedKey =
+          "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8";
+
+      expect(ExtendedKey.deserialize(serializedKey).toString(), serializedKey);
+    });
+
+    test("private child key", () {
+      String serializedKey =
+          "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7";
+
+      expect(ExtendedKey.deserialize(serializedKey).toString(), serializedKey);
+    });
+
+    test("public child key", () {
+      String serializedKey =
+          "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw";
+
+      expect(ExtendedKey.deserialize(serializedKey).toString(), serializedKey);
     });
   });
 }
