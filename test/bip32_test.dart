@@ -5,6 +5,7 @@ import "package:test/test.dart";
 import "package:base58check/base58.dart";
 
 import "package:bip32/bip32.dart";
+import "package:bip32/exceptions.dart";
 
 void main() {
   const firstHardenedChild = 0x80000000;
@@ -139,6 +140,15 @@ void main() {
     });
   });
 
+  test("refuse to generate a hardened child for a extended public key", () {
+    String serializedKey =
+        "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8";
+
+    var key = ExtendedKey.deserialize(serializedKey);
+    expect(() => deriveExtendedPublicChildKey(key, firstHardenedChild),
+        throwsA(isInstanceOf<InvalidChildNumber>()));
+  });
+
   group("(de)serialization", () {
     test("private master key", () {
       String serializedKey =
@@ -183,6 +193,5 @@ void main() {
 
       expect(() => ExtendedKey.deserialize(serializedKey), throws);
     });
-
   });
 }
