@@ -13,6 +13,8 @@ import "package:pointycastle/ecc/curves/secp256k1.dart";
 import "package:pointycastle/ecc/api.dart";
 import "package:pointycastle/src/utils.dart" as utils;
 
+import "exceptions.dart";
+
 final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
 final ripemd160digest = RIPEMD160Digest();
@@ -75,11 +77,15 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
       : _derivePublicMessage(key.publicKey(), childNumber);
   Uint8List hash = hmacSha512(key.chainCode, message);
 
-  // TODO iff leftSide bigger than order throw exception
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
+  if (leftSide >= curve.n) {
+    throw BiggerThanOrder();
+  }
 
-  // TODO iff childPrivateKey is zero throw exception
   BigInt childPrivateKey = (leftSide + key.key) % curve.n;
+  if (childPrivateKey == BigInt.zero) {
+    throw KeyIsZero();
+  }
 
   Uint8List chainCode = _rightFrom(hash);
 
@@ -92,15 +98,20 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
   );
 }
 
-// TODO iff childNumber >= firstHardenedChild throw exception
 /// CKDpub
 ExtendedPublicKey deriveExtendedPublicChildKey(
     ExtendedPublicKey key, int childNumber) {
+  if (childNumber >= firstHardenedChild) {
+    throw InvalidChildNumber();
+  }
+
   Uint8List message = _derivePublicMessage(key, childNumber);
   Uint8List hash = hmacSha512(key.chainCode, message);
 
-  // TODO iff leftSide bigger than order throw exception
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
+  if (leftSide >= curve.n) {
+    throw BiggerThanOrder();
+  }
 
   ECPoint childPublicKey =
       publicKeyFor(utils.decodeBigInt(_leftFrom(hash))) + key.q;
@@ -284,7 +295,7 @@ class ExtendedPrivateKey extends ExtendedKey {
     );
 
     if (!extendedPrivateKey.verifyChecksum(sublist(key, 78, 82))) {
-      throw Exception("checksum invalid");
+      throw InvalidChecksum();
     }
 
     return extendedPrivateKey;
@@ -340,7 +351,7 @@ class ExtendedPublicKey extends ExtendedKey {
     );
 
     if (!extendedPublickey.verifyChecksum(sublist(key, 78, 82))) {
-      throw Exception("checksum invalid");
+      throw InvalidChecksum();
     }
 
     return extendedPublickey;
