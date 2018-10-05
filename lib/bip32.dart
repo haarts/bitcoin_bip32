@@ -71,18 +71,18 @@ Uint8List serializeTo4bytes(int i) {
 
 /// CKDpriv
 ExtendedPrivateKey deriveExtendedPrivateChildKey(
-    ExtendedPrivateKey key, int childNumber) {
+    ExtendedPrivateKey parent, int childNumber) {
   Uint8List message = childNumber >= firstHardenedChild
-      ? _derivePrivateMessage(key, childNumber)
-      : _derivePublicMessage(key.publicKey(), childNumber);
-  Uint8List hash = hmacSha512(key.chainCode, message);
+      ? _derivePrivateMessage(parent, childNumber)
+      : _derivePublicMessage(parent.publicKey(), childNumber);
+  Uint8List hash = hmacSha512(parent.chainCode, message);
 
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
     throw BiggerThanOrder();
   }
 
-  BigInt childPrivateKey = (leftSide + key.key) % curve.n;
+  BigInt childPrivateKey = (leftSide + parent.key) % curve.n;
   if (childPrivateKey == BigInt.zero) {
     throw KeyIsZero();
   }
@@ -93,20 +93,20 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
     key: childPrivateKey,
     chainCode: chainCode,
     childNumber: childNumber,
-    depth: key.depth + 1,
-    parentFingerprint: key.fingerprint,
+    depth: parent.depth + 1,
+    parentFingerprint: parent.fingerprint,
   );
 }
 
 /// CKDpub
 ExtendedPublicKey deriveExtendedPublicChildKey(
-    ExtendedPublicKey key, int childNumber) {
+    ExtendedPublicKey parent, int childNumber) {
   if (childNumber >= firstHardenedChild) {
     throw InvalidChildNumber();
   }
 
-  Uint8List message = _derivePublicMessage(key, childNumber);
-  Uint8List hash = hmacSha512(key.chainCode, message);
+  Uint8List message = _derivePublicMessage(parent, childNumber);
+  Uint8List hash = hmacSha512(parent.chainCode, message);
 
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
@@ -121,8 +121,8 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
     q: childPublicKey,
     chainCode: _rightFrom(hash),
     childNumber: childNumber,
-    depth: key.depth + 1,
-    parentFingerprint: key.fingerprint,
+    depth: parent.depth + 1,
+    parentFingerprint: parent.fingerprint,
   );
 }
 
