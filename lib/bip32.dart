@@ -331,14 +331,19 @@ class ExtendedPublicKey extends ExtendedKey {
             chainCode: chainCode);
 
   factory ExtendedPublicKey.deserialize(Uint8List key) {
-    // TODO verify checksum
-    return ExtendedPublicKey(
+    var extendedPublickey = ExtendedPublicKey(
       depth: key[4],
       parentFingerprint: sublist(key, 5, 9),
       childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
       chainCode: sublist(key, 13, 45),
       q: _decodeCompressedECPoint(sublist(key, 45, 78)),
     );
+
+    if (!extendedPublickey.verifyChecksum(sublist(key, 78, 82))) {
+      throw Exception("checksum invalid");
+    }
+
+    return extendedPublickey;
   }
 
   @override

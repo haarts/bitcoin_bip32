@@ -168,12 +168,21 @@ void main() {
       expect(ExtendedKey.deserialize(serializedKey).toString(), serializedKey);
     });
 
-    test("broken checksum", () {
+    test("broken checksum for private key", () {
       // (Capitalized a random character from the private master key)
       String serializedKey =
           "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3WJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi";
 
       expect(() => ExtendedKey.deserialize(serializedKey), throws);
     });
+
+    test("broken checksum for public key", () {
+      // (Capitalized a random character from the public master key)
+      String serializedKey =
+          "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7uSUDFdp6W1EGMcet8";
+
+      expect(() => ExtendedKey.deserialize(serializedKey), throws);
+    });
+
   });
 }
