@@ -29,9 +29,12 @@ const String alphabet =
 /// 4 child number
 /// 32 chain code
 /// 33 public or private key
-const int lengthOfKey = 82;
+const int lengthOfSerializedKey = 82;
 
-/// FirstHardenedChild is the index of the firxt "harded" child key as per the
+/// From the specification the length of a private of public key
+const int lengthOfKey = 33;
+
+/// FirstHardenedChild is the index of the firxt "hardened" child key as per the
 /// bip32 spec
 const int firstHardenedChild = 0x80000000;
 
@@ -47,8 +50,8 @@ final Uint8List publicKeyVersion = hex.decode("0488B21E");
 final Uint8List masterKey = utf8.encoder.convert("Bitcoin seed");
 
 /// AKA 'point(k)' in the specification
-ECPoint publicKeyFor(Uint8List encodedInt) {
-  return ECPublicKey(curve.G * utils.decodeBigInt(encodedInt), curve).Q;
+ECPoint publicKeyFor(BigInt d) {
+  return ECPublicKey(curve.G * d, curve).Q;
 }
 
 /// AKA 'ser_P(P)' in the specification
@@ -68,59 +71,69 @@ Uint8List serializeTo4bytes(int i) {
 ExtendedPrivateKey deriveExtendedPrivateChildKey(
     ExtendedPrivateKey key, int childNumber) {
   Uint8List message = childNumber >= firstHardenedChild
-      ? _derivePrivateMessage(key.key, childNumber)
-      : _derivePublicMessage(key.key, childNumber);
+      ? _derivePrivateMessage(key, childNumber)
+      : _derivePublicMessage(key.publicKey(), childNumber);
   Uint8List hash = hmacSha512(key.chainCode, message);
 
   // TODO iff leftSide bigger than order throw exception
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
 
   // TODO iff childPrivateKey is zero throw exception
-  BigInt childPrivateKey = (leftSide + utils.decodeBigInt(key.key)) % curve.n;
+  BigInt childPrivateKey = (leftSide + key.key) % curve.n;
 
   Uint8List chainCode = _rightFrom(hash);
 
   return ExtendedPrivateKey(
-    key: utils.encodeBigInt(childPrivateKey),
+    key: childPrivateKey,
     chainCode: chainCode,
     childNumber: childNumber,
     depth: key.depth + 1,
+    parentFingerprint: key.fingerprint,
   );
-}
-
-Uint8List _derivePrivateMessage(Uint8List key, int childNumber) {
-  Uint8List message = Uint8List(37);
-  message[0] = 0;
-  message.setAll(1, key);
-  message.setAll(33, serializeTo4bytes(childNumber));
-
-  return message;
 }
 
 // TODO iff childNumber >= firstHardenedChild throw exception
 /// CKDpub
 ExtendedPublicKey deriveExtendedPublicChildKey(
     ExtendedPublicKey key, int childNumber) {
-  Uint8List message = _derivePublicMessage(key.key, childNumber);
+  Uint8List message = _derivePublicMessage(key, childNumber);
   Uint8List hash = hmacSha512(key.chainCode, message);
 
   // TODO iff leftSide bigger than order throw exception
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
 
-  Uint8List childPublicKey =
-      (publicKeyFor(_leftFrom(hash)) + publicKeyFor(key.key)).getEncoded(true);
+  ECPoint childPublicKey =
+      publicKeyFor(utils.decodeBigInt(_leftFrom(hash))) + key.q;
 
   return ExtendedPublicKey(
-    key: childPublicKey,
+    q: childPublicKey,
     chainCode: _rightFrom(hash),
     childNumber: childNumber,
     depth: key.depth + 1,
+    parentFingerprint: key.fingerprint,
   );
 }
 
-Uint8List _derivePublicMessage(Uint8List key, int childNumber) {
+Uint8List _paddedEncodedBigInt(BigInt i) {
+  Uint8List fullLength = Uint8List(lengthOfKey - 1);
+  Uint8List encodedBigInt = utils.encodeBigInt(i);
+  fullLength.setAll(fullLength.length - encodedBigInt.length, encodedBigInt);
+
+  return fullLength;
+}
+
+Uint8List _derivePrivateMessage(ExtendedPrivateKey key, int childNumber) {
   Uint8List message = Uint8List(37);
-  message.setAll(0, key);
+  message[0] = 0;
+  message.setAll(1, _paddedEncodedBigInt(key.key));
+  message.setAll(33, serializeTo4bytes(childNumber));
+
+  return message;
+}
+
+Uint8List _derivePublicMessage(ExtendedPublicKey key, int childNumber) {
+  Uint8List message = Uint8List(37);
+  message.setAll(0, compressed(key.q));
   message.setAll(33, serializeTo4bytes(childNumber));
 
   return message;
@@ -160,10 +173,12 @@ bool equal(List<int> a, List<int> b) {
   return true;
 }
 
-abstract class ExtendedKey {
-  // 33 bytes, big endian
-  Uint8List key;
+// NOTE yikes, what a dance, surely I'm overlooking something
+Uint8List sublist(Uint8List list, int start, int end) {
+  return Uint8List.fromList(list.getRange(start, end).toList());
+}
 
+abstract class ExtendedKey {
   // 32 bytes
   Uint8List chainCode;
 
@@ -174,20 +189,21 @@ abstract class ExtendedKey {
   // 4 bytes
   final Uint8List version;
 
-  bool get isMaster => depth == 0;
+  // 4 bytes
+  Uint8List parentFingerprint;
 
   ExtendedKey({
     this.version,
-    this.key,
     this.depth,
     this.childNumber,
     this.chainCode,
+    this.parentFingerprint,
   });
 
   factory ExtendedKey.deserialize(String key) {
     List<int> decodedKey = Base58Codec(alphabet).decode(key);
-    if (decodedKey.length != lengthOfKey) {
-      throw Exception("key not of length $lengthOfKey");
+    if (decodedKey.length != lengthOfSerializedKey) {
+      throw Exception("key not of length $lengthOfSerializedKey");
     }
 
     if (equal(decodedKey.getRange(0, 4).toList(), privateKeyVersion.toList())) {
@@ -197,20 +213,13 @@ abstract class ExtendedKey {
     return ExtendedPublicKey.deserialize(decodedKey);
   }
 
-  Uint8List get fingerprint {
-    if (isMaster) {
-      return Uint8List.fromList([0, 0, 0, 0]);
-    }
-
-    Uint8List hash = hash160(compressed(publicKeyFor(key)));
-    return Uint8List.view(hash.buffer, 0, 4);
-  }
+  Uint8List get fingerprint;
 
   List<int> _serialize() {
     List<int> serialization = List<int>();
     serialization.addAll(version);
     serialization.add(depth);
-    serialization.addAll(fingerprint);
+    serialization.addAll(parentFingerprint);
     serialization.addAll(serializeTo4bytes(childNumber));
     serialization.addAll(chainCode);
     serialization.addAll(_serializedKey());
@@ -233,85 +242,103 @@ abstract class ExtendedKey {
 }
 
 class ExtendedPrivateKey extends ExtendedKey {
+  BigInt key;
+
   ExtendedPrivateKey({
-    Uint8List key,
+    BigInt this.key,
     int depth,
     int childNumber,
     Uint8List chainCode,
+    Uint8List parentFingerprint,
   }) : super(
             version: privateKeyVersion,
-            key: key,
             depth: depth,
             childNumber: childNumber,
+            parentFingerprint: parentFingerprint,
             chainCode: chainCode);
 
   ExtendedPrivateKey.master(Uint8List seed)
       : super(version: privateKeyVersion) {
     Uint8List hash = hmacSha512(masterKey, seed);
-    key = _leftFrom(hash);
+    key = utils.decodeBigInt(_leftFrom(hash));
     chainCode = _rightFrom(hash);
     depth = 0;
     childNumber = 0;
+    parentFingerprint = Uint8List.fromList([0, 0, 0, 0]);
   }
 
   factory ExtendedPrivateKey.deserialize(Uint8List key) {
     return ExtendedPrivateKey(
       depth: key[4],
-      childNumber:
-          ByteData.view(Uint8List.fromList(key.getRange(9, 13).toList()).buffer)
-              .getInt32(0),
-      key: Uint8List.fromList(key.getRange(46, 78).toList()),
-      chainCode: Uint8List.fromList(key.getRange(13, 45).toList()),
+      parentFingerprint: sublist(key, 5, 9),
+      childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
+      key: utils.decodeBigInt(sublist(key, 46, 78)),
+      chainCode: sublist(key, 13, 45),
     );
   }
 
   ExtendedPublicKey publicKey() {
     return ExtendedPublicKey(
-      key: compressed(publicKeyFor(key)),
+      q: publicKeyFor(key),
       depth: depth,
       childNumber: childNumber,
       chainCode: chainCode,
+      parentFingerprint: parentFingerprint,
     );
   }
 
   @override
-  List<int> _serializedKey() {
-    List<int> serialization = [0];
-    serialization.addAll(key);
+  Uint8List get fingerprint => publicKey().fingerprint;
 
-    return serialization;
+  @override
+  List<int> _serializedKey() {
+    Uint8List serialization = Uint8List(lengthOfKey);
+    serialization[0] = 0;
+    Uint8List encodedKey = _paddedEncodedBigInt(key);
+    serialization.setAll(1, encodedKey);
+
+    return serialization.toList();
   }
 }
 
 class ExtendedPublicKey extends ExtendedKey {
-  // 4 bytes
-  final Uint8List version = publicKeyVersion;
+  ECPoint q;
 
   ExtendedPublicKey({
-    key,
+    this.q,
     depth,
     childNumber,
     chainCode,
+    parentFingerprint,
   }) : super(
             version: publicKeyVersion,
-            key: key,
             depth: depth,
             childNumber: childNumber,
+            parentFingerprint: parentFingerprint,
             chainCode: chainCode);
 
   factory ExtendedPublicKey.deserialize(Uint8List key) {
-    return ExtendedPublicKey(
-      depth: key[4],
-      childNumber:
-          ByteData.view(Uint8List.fromList(key.getRange(9, 13).toList()).buffer)
-              .getInt32(0),
-      key: Uint8List.fromList(key.getRange(46, 78).toList()),
-      chainCode: Uint8List.fromList(key.getRange(13, 45).toList()),
-    );
+    // TODO need to uncompress the pubkey
+  }
+
+  @override
+  Uint8List get fingerprint {
+    Uint8List identifier = hash160(compressed(q));
+    return Uint8List.view(identifier.buffer, 0, 4);
   }
 
   @override
   List<int> _serializedKey() {
-    return key.toList();
+    return compressed(q).toList();
   }
+}
+
+void debug(List<int> payload) {
+  print("version: ${payload.getRange(0, 4)}");
+  print("depth: ${payload.getRange(4, 5)}");
+  print("parent fingerprint: ${payload.getRange(5, 9)}");
+  print("childNumber: ${payload.getRange(9, 13)}");
+  print("chaincode: ${payload.getRange(13, 46)}");
+  print("key: ${payload.getRange(46, 78)}");
+  print("checksum: ${payload.getRange(78, 82)}");
 }
