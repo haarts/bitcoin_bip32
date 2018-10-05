@@ -132,21 +132,27 @@ void main() {
       vector["children"].forEach((child) {
         privateKey =
             deriveExtendedPrivateChildKey(privateKey, child["childNumber"]);
-        publicKey = privateKey.publicKey();
-
         expect(privateKey.toString(), child["privKey"]);
+
+        publicKey = privateKey.publicKey();
         expect(publicKey.toString(), child["pubKey"]);
       });
     });
   });
 
-  test("refuse to generate a hardened child for a extended public key", () {
-    String serializedKey =
-        "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8";
+  group("derive public child key from public key", () {
+    ExtendedPublicKey key = ExtendedKey.deserialize(vector1["pubKey"]);
 
-    var key = ExtendedKey.deserialize(serializedKey);
-    expect(() => deriveExtendedPublicChildKey(key, firstHardenedChild),
-        throwsA(isInstanceOf<InvalidChildNumber>()));
+    test("refuse to generate a hardened child for a extended public key", () {
+      expect(() => deriveExtendedPublicChildKey(key, firstHardenedChild),
+          throwsA(isInstanceOf<InvalidChildNumber>()));
+    });
+
+    test("generate a child public key", () {
+      var childKey = deriveExtendedPublicChildKey(key, 1);
+
+      expect(childKey.toString(), vector1["children"][1]["pubKey"]);
+    });
   });
 
   group("(de)serialization", () {
