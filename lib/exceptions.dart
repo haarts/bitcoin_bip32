@@ -13,3 +13,7 @@ class BiggerThanOrder implements Exception {
 class InvalidChildNumber implements Exception {
   String toString() => "Child number is bigger than hardened child number";
 }
+
+class InfiniteKey implements Exception {
+  String toString() => "ECPoint is infinite";
+}

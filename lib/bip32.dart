@@ -113,9 +113,10 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
     throw BiggerThanOrder();
   }
 
-  // TODO check if childPublicKey is infinite
-  ECPoint childPublicKey =
-      publicKeyFor(leftSide) + key.q;
+  ECPoint childPublicKey = publicKeyFor(leftSide) + parent.q;
+  if (childPublicKey.isInfinity) {
+    throw InfiniteKey();
+  }
 
   return ExtendedPublicKey(
     q: childPublicKey,
