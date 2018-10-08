@@ -24,7 +24,7 @@ final curve = ECCurve_secp256k1();
 const String alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-/// From the specficiation:
+/// From the specification:
 /// 4 version
 /// 1 depth
 /// 4 fingerprint
@@ -69,7 +69,7 @@ Uint8List serializeTo4bytes(int i) {
   return bytes.buffer.asUint8List();
 }
 
-/// CKDpriv
+/// CKDpriv in the specficiation
 ExtendedPrivateKey deriveExtendedPrivateChildKey(
     ExtendedPrivateKey parent, int childNumber) {
   Uint8List message = childNumber >= firstHardenedChild
@@ -98,7 +98,7 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
   );
 }
 
-/// CKDpub
+/// CKDpub in the specification
 ExtendedPublicKey deriveExtendedPublicChildKey(
     ExtendedPublicKey parent, int childNumber) {
   if (childNumber >= firstHardenedChild) {
@@ -213,6 +213,9 @@ abstract class ExtendedKey {
     this.parentFingerprint,
   });
 
+  /// Take a HD key serialized according to the spec and deserialize it.
+  ///
+  /// Works for both private and public keys.
   factory ExtendedKey.deserialize(String key) {
     List<int> decodedKey = Base58Codec(alphabet).decode(key);
     if (decodedKey.length != lengthOfSerializedKey) {
@@ -226,8 +229,12 @@ abstract class ExtendedKey {
     return ExtendedPublicKey.deserialize(decodedKey);
   }
 
+  /// Returns the first 4 bytes of the hash160 compressed public key.
   Uint8List get fingerprint;
 
+	/// Returns the public key assocated with the extended key.
+	///
+	/// In case of [ExtendedPublicKey] returns self.
   ExtendedPublicKey publicKey();
 
   List<int> _serialize() {
@@ -254,6 +261,8 @@ abstract class ExtendedKey {
         .getRange(0, 4);
   }
 
+  /// Returns the string representation of this extended key. This can be
+  /// written to disk for future deserializion.
   @override
   String toString() {
     List<int> payload = _serialize();
@@ -263,6 +272,12 @@ abstract class ExtendedKey {
   }
 }
 
+/// An extended private key as defined by the BIP32 specification.
+///
+/// In the lingo of the spec this is a `(k, c)`.
+/// This can be used to generate a extended public key or further child keys.
+/// Note that the spec talks about a 'neutered' key, this is the public key
+/// associated with a private key.
 class ExtendedPrivateKey extends ExtendedKey {
   BigInt key;
 
@@ -330,6 +345,10 @@ class ExtendedPrivateKey extends ExtendedKey {
   }
 }
 
+/// An extended public key as defined by the BIP32 specification.
+///
+/// In the lingo of the spec this is a `(K, c)`.
+/// This can be used to generate further public child keys only.
 class ExtendedPublicKey extends ExtendedKey {
   ECPoint q;
 
