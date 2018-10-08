@@ -3,10 +3,10 @@
 An implementation of the [BIP32 spec] for Hierarchical Deterministic Bitcoin
 addresses. No [superimposing wallet structure] has been defined.
 
-## Example
+## Examples
 
-You can use this library in two primary ways; one with a serialized public
-or private HD key. Or with a hex encoded seed.
+You can use this library in two ways; one with a serialized public or private
+HD key or with a hex encoded seed.
 
 Look at the tests to see more elaborate uses.
 
@@ -16,6 +16,9 @@ Look at the tests to see more elaborate uses.
   Chain chain = Chain.seed("some seed");
   ExtendedPrivateKey key = chain.forPath("m/0/100");
 ```
+
+The `key` has a field called `key` which contains a `BigInt`. This is the actual
+key.
 
 ### Importing a HD private key
 
@@ -31,6 +34,9 @@ Look at the tests to see more elaborate uses.
   ExtendedPublic childKey = chain.forPath("M/0/100");
 ```
 
+The `key` has a field called `q` which contains a [`ECPoint`]. This is the actual
+key.
+
 Please note that trying to generate a private key from a public key will throw
 an exception.
 
@@ -41,9 +47,9 @@ There is a tiny chance a child key derivation fails. Please catch the
 appropriate exceptions in your code.
 
 These exceptions are:
-- KeyIsZero
-- BiggerThanOrder
-- InfiniteKey
+- `KeyZero`
+- `KeyBiggerThanOrder`
+- `KeyInfinite`
 
 ## Installing
 
@@ -63,3 +69,4 @@ Without the guiding code of [go-bip32] and [money-tree] projects this library wo
 [superimposing wallet structure]: https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#specification-wallet-structure
 [go-bip32]: https://github.com/tyler-smith/go-bip32/
 [money-tree]: https://github.com/GemHQ/money-tree/
+[`ECPoint`]: https://pub.dartlang.org/documentation/pointycastle/1.0.0-rc3/pointycastle.api.ecc/ECPoint-class.html

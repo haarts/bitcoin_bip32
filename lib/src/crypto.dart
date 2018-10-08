@@ -79,12 +79,12 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
 
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
-    throw BiggerThanOrder();
+    throw KeyBiggerThanOrder();
   }
 
   BigInt childPrivateKey = (leftSide + parent.key) % curve.n;
   if (childPrivateKey == BigInt.zero) {
-    throw KeyIsZero();
+    throw KeyZero();
   }
 
   Uint8List chainCode = _rightFrom(hash);
@@ -110,12 +110,12 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
 
   BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
-    throw BiggerThanOrder();
+    throw KeyBiggerThanOrder();
   }
 
   ECPoint childPublicKey = publicKeyFor(leftSide) + parent.q;
   if (childPublicKey.isInfinity) {
-    throw InfiniteKey();
+    throw KeyInfinite();
   }
 
   return ExtendedPublicKey(

@@ -9,14 +9,14 @@ class InvalidChecksum implements Exception {
 /// Thrown when a derived private key is zero.
 ///
 /// Retry with an other child number.
-class KeyIsZero implements Exception {
+class KeyZero implements Exception {
   String toString() => "Key is zero";
 }
 
 /// Thrown when a derived key is bigger than the order of the curve.
 ///
 /// Retry with an other child number.
-class BiggerThanOrder implements Exception {
+class KeyBiggerThanOrder implements Exception {
   String toString() => "Integer is bigger than order of curve";
 }
 
@@ -28,7 +28,7 @@ class InvalidChildNumber implements Exception {
 /// Thrown when a derived public key is infinite.
 ///
 /// Retry with an other child number.
-class InfiniteKey implements Exception {
+class KeyInfinite implements Exception {
   String toString() => "ECPoint is infinite";
 }
 
