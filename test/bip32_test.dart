@@ -128,88 +128,136 @@ void main() {
 
   [vector1, vector2, vector3].forEach((vector) {
     test("static vector", () {
-      Uint8List seed = hex.decoder.convert(vector["seed"]);
+      Chain chain = Chain.seed(vector["seed"]);
+      vector["chains"].forEach((child) {
+        ExtendedPrivateKey privateKey = chain.forPath(child["chain"]);
+        expect(privateKey.toString(), child["privateKey"]);
 
-      var privateKey = ExtendedPrivateKey.master(seed);
-      var publicKey = privateKey.publicKey();
-
-      expect(privateKey.toString(), vector["privKey"]);
-      expect(publicKey.toString(), vector["pubKey"]);
-
-      vector["children"].forEach((child) {
-        privateKey =
-            deriveExtendedPrivateChildKey(privateKey, child["childNumber"]);
-        expect(privateKey.toString(), child["privKey"]);
-
-        publicKey = privateKey.publicKey();
-        expect(publicKey.toString(), child["pubKey"]);
+        ExtendedPublicKey publicKey = privateKey.publicKey();
+        expect(publicKey.toString(), child["publicKey"]);
       });
     });
   });
 
-  group("path parser", () {
-    test("private key leader", () {
-      expect(parseType("m"), ExtendedPrivateKey);
-      expect(parseType("m/"), ExtendedPrivateKey);
-      expect(parseType("m/100"), ExtendedPrivateKey);
-      expect(parseType("m/100'"), ExtendedPrivateKey);
+  group("chain", () {
+    test("throw exception when generating private key based on public key", () {
+      Chain chain = Chain.import(vector1["chains"][0]["publicKey"]);
+
+      expect(() => chain.forPath("m"), throwsA(TypeMatcher<InvalidPath>()));
     });
 
-    test("public key leader", () {
-      expect(parseType("M"), ExtendedPublicKey);
-      expect(parseType("M/"), ExtendedPublicKey);
-      expect(parseType("M/100"), ExtendedPublicKey);
-      expect(parseType("M/100'"), ExtendedPublicKey);
-    });
+    test("throws exception when path doesn't start with 'm' or 'M'", () {
+      Chain chain = Chain.import(vector1["chains"][0]["publicKey"]);
 
-    test("normal child notation", () {
-      expect(parsePath("m/0"), [0]);
       expect(
-          parsePath("m/${firstHardenedChild - 1}"), [firstHardenedChild - 1]);
-      expect(parsePath("m/${firstHardenedChild}"), [firstHardenedChild]);
+          () => chain.forPath("/foobar"), throwsA(TypeMatcher<InvalidPath>()));
     });
 
-    test("hardened child notation", () {
-      expect(parsePath("m/0'"), [firstHardenedChild]);
-      expect(parsePath("m/100'"), [firstHardenedChild + 100]);
-    });
+    group("path parser", () {
+      Chain chain;
 
-    test("nesting", () {
-      expect(parsePath("m/0'/2/4'/1000"),
-          [firstHardenedChild, 2, firstHardenedChild + 4, 1000]);
-    });
+      setUp(() {
+        chain = Chain.seed("00");
+      });
 
-    test("trailing slash", () {
-      expect(parsePath("m/0/2/4/1000"), [0, 2, 4, 1000]);
-      expect(parsePath("m/0/2/4/1000/"), [0, 2, 4, 1000]);
+      test("ignores trailing slashes", () {
+        var key1 = chain.forPath("m/100");
+        var key2 = chain.forPath("m/100/");
+
+        expect(key1.toString(), key2.toString());
+      });
+
+      group("m", () {
+        var key;
+        setUp(() {
+          key = chain.forPath('m');
+        });
+
+        test("has depth 0", () {
+          expect(key.depth, 0);
+        });
+
+        test("has child number 0", () {
+          expect(key.childNumber, 0);
+        });
+
+        test("is a private key", () {
+          expect(key, TypeMatcher<ExtendedPrivateKey>());
+        });
+      });
+
+      group("M", () {
+        var key;
+        setUp(() {
+          key = chain.forPath('M');
+        });
+
+        test("has depth 0", () {
+          expect(key.depth, 0);
+        });
+
+        test("has child number 0", () {
+          expect(key.childNumber, 0);
+        });
+
+        test("is a public key", () {
+          expect(key, TypeMatcher<ExtendedPublicKey>());
+        });
+      });
+
+      group("m/100", () {
+        var key;
+        setUp(() {
+          key = chain.forPath('m/100');
+        });
+
+        test("has depth 1", () {
+          expect(key.depth, 1);
+        });
+
+        test("has child number 100", () {
+          expect(key.childNumber, 100);
+        });
+      });
+
+      group("m/100'", () {
+        var key;
+        setUp(() {
+          key = chain.forPath("m/100'");
+        });
+
+        test("has depth 1", () {
+          expect(key.depth, 1);
+        });
+
+        test("has child number 2147483648 + 100", () {
+          expect(key.childNumber, firstHardenedChild + 100);
+        });
+      });
+
+      group("m/100'/0", () {
+        var key;
+        setUp(() {
+          key = chain.forPath("m/100'/0");
+        });
+
+        test("has depth 2", () {
+          expect(key.depth, 2);
+        });
+
+        test("has child number 0", () {
+          expect(key.childNumber, 0);
+        });
+      });
     });
   });
 
-  group("derive public child key from public key", () {
-    ExtendedPublicKey parent = ExtendedKey.deserialize(vector2["pubKey"]);
+  test("refuse to generate a hardened child for a extended public key", () {
+    ExtendedPublicKey parent =
+        ExtendedKey.deserialize(vector2["chains"][0]["publicKey"]);
 
-    test("refuse to generate a hardened child for a extended public key", () {
-      expect(() => deriveExtendedPublicChildKey(parent, firstHardenedChild),
-          throwsA(isInstanceOf<InvalidChildNumber>()));
-    });
-
-    test("generate child public key 0", () {
-      var childKey = deriveExtendedPublicChildKey(parent, 0);
-
-      expect(childKey.toString(), vector2["children"][0]["pubKey"]);
-    });
-
-    test("generate child public key 1", () {
-      var childKey = deriveExtendedPublicChildKey(parent, 1);
-
-      expect(childKey.toString(), vector2["children"][2]["pubKey"]);
-    });
-
-    test("generate child public key 2", () {
-      var childKey = deriveExtendedPublicChildKey(parent, 2);
-
-      expect(childKey.toString(), vector2["children"][4]["pubKey"]);
-    });
+    expect(() => deriveExtendedPublicChildKey(parent, firstHardenedChild),
+        throwsA(TypeMatcher<InvalidChildNumber>()));
   });
 
   group("(de)serialization", () {

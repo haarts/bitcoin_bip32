@@ -17,3 +17,10 @@ class InvalidChildNumber implements Exception {
 class InfiniteKey implements Exception {
   String toString() => "ECPoint is infinite";
 }
+
+class InvalidPath implements Exception {
+  String message;
+  InvalidPath(this.message);
+
+  String toString() => message;
+}

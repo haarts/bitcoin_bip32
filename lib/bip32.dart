@@ -15,6 +15,9 @@ import "package:pointycastle/src/utils.dart" as utils;
 
 import "exceptions.dart";
 
+export "chain.dart";
+export "exceptions.dart";
+
 final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
 final ripemd160digest = RIPEMD160Digest();
@@ -228,6 +231,8 @@ abstract class ExtendedKey {
 
   Uint8List get fingerprint;
 
+  ExtendedPublicKey publicKey();
+
   List<int> _serialize() {
     List<int> serialization = List<int>();
     serialization.addAll(version);
@@ -303,6 +308,7 @@ class ExtendedPrivateKey extends ExtendedKey {
     return extendedPrivateKey;
   }
 
+  @override
   ExtendedPublicKey publicKey() {
     return ExtendedPublicKey(
       q: publicKeyFor(key),
@@ -363,6 +369,11 @@ class ExtendedPublicKey extends ExtendedKey {
   Uint8List get fingerprint {
     Uint8List identifier = hash160(compressed(q));
     return Uint8List.view(identifier.buffer, 0, 4);
+  }
+
+  @override
+  ExtendedPublicKey publicKey() {
+    return this;
   }
 
   @override
