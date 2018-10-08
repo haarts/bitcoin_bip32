@@ -5,7 +5,7 @@ import "package:test/test.dart";
 import "package:base58check/base58.dart";
 
 import "package:bip32/bip32.dart";
-import "package:bip32/exceptions.dart";
+import "package:bip32/src/crypto.dart";
 
 void main() {
   const Map<String, dynamic> vector1 = {

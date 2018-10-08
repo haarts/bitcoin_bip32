@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import "package:convert/convert.dart";
 
-import "bip32.dart";
+import "crypto.dart";
 import "exceptions.dart";
 
 class Chain {
