@@ -19,8 +19,10 @@ final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
 final ripemd160digest = RIPEMD160Digest();
 
+/// The Bitcoin curve
 final curve = ECCurve_secp256k1();
 
+/// Used for the Base58 encoding.
 const String alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -159,6 +161,7 @@ Uint8List hmacSha512(Uint8List key, Uint8List message) {
   return hmac.process(message);
 }
 
+/// Double hash the data: RIPEMD160(SHA256(data))
 Uint8List hash160(Uint8List data) {
   return ripemd160digest.process(sha256digest.process(data));
 }
@@ -191,18 +194,20 @@ Uint8List sublist(Uint8List list, int start, int end) {
   return Uint8List.fromList(list.getRange(start, end).toList());
 }
 
+
+/// Abstract class on which [ExtendedPrivateKey] and [ExtendedPublicKey] are based.
 abstract class ExtendedKey {
-  // 32 bytes
+  /// 32 bytes
   Uint8List chainCode;
 
   int childNumber;
 
   int depth;
 
-  // 4 bytes
+  /// 4 bytes
   final Uint8List version;
 
-  // 4 bytes
+  /// 4 bytes
   Uint8List parentFingerprint;
 
   ExtendedKey({
@@ -251,6 +256,7 @@ abstract class ExtendedKey {
 
   List<int> _serializedKey();
 
+  /// Used to verify deserialized keys.
   bool verifyChecksum(Uint8List externalChecksum) {
     return equal(_checksum(), externalChecksum.toList());
   }
