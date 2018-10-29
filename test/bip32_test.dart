@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:convert/convert.dart';
 import "package:test/test.dart";
 import "package:base58check/base58.dart";
 
