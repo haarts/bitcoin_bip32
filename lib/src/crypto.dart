@@ -193,7 +193,6 @@ Uint8List sublist(Uint8List list, int start, int end) {
   return Uint8List.fromList(list.getRange(start, end).toList());
 }
 
-
 /// Abstract class on which [ExtendedPrivateKey] and [ExtendedPublicKey] are based.
 abstract class ExtendedKey {
   /// 32 bytes
@@ -236,9 +235,9 @@ abstract class ExtendedKey {
   /// Returns the first 4 bytes of the hash160 compressed public key.
   Uint8List get fingerprint;
 
-	/// Returns the public key assocated with the extended key.
-	///
-	/// In case of [ExtendedPublicKey] returns self.
+  /// Returns the public key assocated with the extended key.
+  ///
+  /// In case of [ExtendedPublicKey] returns self.
   ExtendedPublicKey publicKey();
 
   List<int> _serialize() {
