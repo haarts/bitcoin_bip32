@@ -13,8 +13,10 @@ Look at the tests to see more elaborate uses.
 ### With a seed
 
 ```
-  Chain chain = Chain.seed("some seed");
+  Chain chain = Chain.seed(hex.encode(utf8.encode("some seed")));
   ExtendedPrivateKey key = chain.forPath("m/0/100");
+  print(key);
+  // => xprv9ww7sMFLzJN5LhdyGB9zfhm9MAVZ8P97iTWQtVeAg2rA9MPZfJUESWe6NaSu44zz44QBjWtwH9HNfJ4vFiUwfrTCvf7AGrgYpXe17bfh2Je
 ```
 
 The `key` has a field called `key` which contains a `BigInt`. This is the actual
