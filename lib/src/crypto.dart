@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import "package:base58check/base58.dart";
-import "package:base58check/base58check.dart";
 import "package:convert/convert.dart";
 import "package:pointycastle/api.dart";
 import "package:pointycastle/macs/hmac.dart";

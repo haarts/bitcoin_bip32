@@ -1,7 +1,4 @@
-import 'dart:typed_data';
-
 import "package:test/test.dart";
-import "package:base58check/base58.dart";
 
 import "package:bip32/bip32.dart";
 import "package:bip32/src/crypto.dart";
@@ -293,7 +290,7 @@ void main() {
       String serializedKey =
           "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3WJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi";
 
-      expect(() => ExtendedKey.deserialize(serializedKey), throws);
+      expect(() => ExtendedKey.deserialize(serializedKey), throwsA(TypeMatcher<InvalidChecksum>()));
     });
 
     test("broken checksum for public key", () {
@@ -301,7 +298,7 @@ void main() {
       String serializedKey =
           "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7uSUDFdp6W1EGMcet8";
 
-      expect(() => ExtendedKey.deserialize(serializedKey), throws);
+      expect(() => ExtendedKey.deserialize(serializedKey), throwsA(TypeMatcher<ArgumentError>()));
     });
   });
 }
