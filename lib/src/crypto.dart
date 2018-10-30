@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import "package:base58check/base58.dart";
 import "package:convert/convert.dart";
@@ -10,6 +10,7 @@ import "package:pointycastle/digests/sha512.dart";
 import "package:pointycastle/digests/ripemd160.dart";
 import "package:pointycastle/ecc/curves/secp256k1.dart";
 import "package:pointycastle/ecc/api.dart";
+// ignore: implementation_imports 
 import "package:pointycastle/src/utils.dart" as utils;
 
 import "exceptions.dart";
@@ -286,7 +287,7 @@ class ExtendedPrivateKey extends ExtendedKey {
   BigInt key;
 
   ExtendedPrivateKey({
-    BigInt this.key,
+    this.key,
     int depth,
     int childNumber,
     Uint8List chainCode,
