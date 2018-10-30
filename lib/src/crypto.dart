@@ -10,7 +10,7 @@ import "package:pointycastle/digests/sha512.dart";
 import "package:pointycastle/digests/ripemd160.dart";
 import "package:pointycastle/ecc/curves/secp256k1.dart";
 import "package:pointycastle/ecc/api.dart";
-// ignore: implementation_imports 
+// ignore: implementation_imports
 import "package:pointycastle/src/utils.dart" as utils;
 
 import "exceptions.dart";
