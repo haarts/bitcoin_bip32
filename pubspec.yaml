@@ -1,8 +1,8 @@
-name: bip32
+name: bitcoin_bip32
 version: 0.1.0
-description: Library implementing BIP32
-author: Feathercoin Development Foundation <info@feathercoin.foundation>
-homepage: https://github.com/Feathercoin-Foundation/bip32
+description: Library implementing Bitcoins BIP32 (Hierarchical Deterministic key derivation) specification in a Flutter friendly fashion.
+author: Kolibri POS authors <info@kolibripos.com>
+homepage: https://github.com/Kolibri-POS/bitcoin_bip32
 
 dependencies:
     pointycastle: ^1.0.0-rc4

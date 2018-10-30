@@ -1,7 +1,7 @@
 import "package:test/test.dart";
 
-import "package:bip32/bip32.dart";
-import "package:bip32/src/crypto.dart";
+import "package:bitcoin_bip32/bitcoin_bip32.dart";
+import "package:bitcoin_bip32/src/crypto.dart";
 
 void main() {
   const Map<String, dynamic> vector1 = {
