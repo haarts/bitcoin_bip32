@@ -26,14 +26,17 @@ final curve = ECCurve_secp256k1();
 const String alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-/// From the specification:
+/// From the specification (in bytes):
 /// 4 version
 /// 1 depth
 /// 4 fingerprint
 /// 4 child number
 /// 32 chain code
 /// 33 public or private key
-const int lengthOfSerializedKey = 82;
+const int lengthOfSerializedKey = 78;
+
+/// Length of checksum in bytes
+const int lengthOfChecksum = 4;
 
 /// From the specification the length of a private of public key
 const int lengthOfKey = 33;
@@ -222,8 +225,9 @@ abstract class ExtendedKey {
   /// Works for both private and public keys.
   factory ExtendedKey.deserialize(String key) {
     List<int> decodedKey = Base58Codec(alphabet).decode(key);
-    if (decodedKey.length != lengthOfSerializedKey) {
-      throw Exception("key not of length $lengthOfSerializedKey");
+    if (decodedKey.length != lengthOfSerializedKey + lengthOfChecksum) {
+      throw InvalidKeyLength(
+          decodedKey.length, lengthOfSerializedKey + lengthOfChecksum);
     }
 
     if (equal(decodedKey.getRange(0, 4), privateKeyVersion)) {
@@ -318,7 +322,8 @@ class ExtendedPrivateKey extends ExtendedKey {
       key: utils.decodeBigInt(sublist(key, 46, 78)),
     );
 
-    if (!extendedPrivateKey.verifyChecksum(sublist(key, 78, 82))) {
+    if (!extendedPrivateKey.verifyChecksum(sublist(key, lengthOfSerializedKey,
+        lengthOfSerializedKey + lengthOfChecksum))) {
       throw InvalidChecksum();
     }
 

@@ -39,3 +39,14 @@ class InvalidPath implements Exception {
 
   String toString() => message;
 }
+
+/// Thrown when deserializing a key which is not of correct length.
+class InvalidKeyLength implements Exception {
+  int actual;
+  int expected;
+
+  InvalidKeyLength(this.actual, this.expected);
+
+  String toString() =>
+      "Key length not correct. Should be $expected, is $actual";
+}

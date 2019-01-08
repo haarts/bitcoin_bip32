@@ -1,5 +1,5 @@
 name: bitcoin_bip32
-version: 0.1.0
+version: 0.1.1
 description: Library implementing Bitcoins BIP32 (Hierarchical Deterministic key derivation) specification in a Flutter friendly fashion.
 author: Kolibri POS authors <info@kolibripos.com>
 homepage: https://github.com/Kolibri-POS/bitcoin_bip32

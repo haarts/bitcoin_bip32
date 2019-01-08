@@ -290,7 +290,8 @@ void main() {
       String serializedKey =
           "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3WJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi";
 
-      expect(() => ExtendedKey.deserialize(serializedKey), throwsA(TypeMatcher<InvalidChecksum>()));
+      expect(() => ExtendedKey.deserialize(serializedKey),
+          throwsA(TypeMatcher<InvalidChecksum>()));
     });
 
     test("broken checksum for public key", () {
@@ -298,7 +299,23 @@ void main() {
       String serializedKey =
           "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7uSUDFdp6W1EGMcet8";
 
-      expect(() => ExtendedKey.deserialize(serializedKey), throwsA(TypeMatcher<ArgumentError>()));
+      expect(() => ExtendedKey.deserialize(serializedKey),
+          throwsA(TypeMatcher<ArgumentError>()));
+    });
+
+    test("too short a key", () {
+      String serializedKey = "xpubx";
+
+      expect(() => ExtendedKey.deserialize(serializedKey),
+          throwsA(TypeMatcher<InvalidKeyLength>()));
+    });
+
+    test("too long a key", () {
+      String serializedKey =
+          "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnwAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+      expect(() => ExtendedKey.deserialize(serializedKey),
+          throwsA(TypeMatcher<Exception>()));
     });
   });
 }
