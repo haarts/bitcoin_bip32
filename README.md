@@ -1,6 +1,7 @@
 # BIP32
 
 [![pub package](https://img.shields.io/pub/v/bitcoin_bip32.svg)](https://pub.dartlang.org/packages/bitcoin_bip32)
+[![CircleCI](https://circleci.com/gh/inapay/bitcoin_bip32.svg?style=svg)](https://circleci.com/gh/inapay/bitcoin_bip32)
 
 An implementation of the [BIP32 spec] for Hierarchical Deterministic Bitcoin
 addresses. No [superimposing wallet structure] has been defined.
