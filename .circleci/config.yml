@@ -1,0 +1,11 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: cirrusci/flutter
+    steps:
+      - checkout
+      - run: flutter doctor
+      - run: flutter test 
+      - run: flutter format . --set-exit-if-changed
+      - run: dartanalyzer . --options=analysis_options.yaml --fatal-hints
