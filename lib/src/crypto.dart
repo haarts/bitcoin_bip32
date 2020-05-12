@@ -1,19 +1,19 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import "package:base58check/base58.dart";
-import "package:convert/convert.dart";
-import "package:pointycastle/api.dart";
-import "package:pointycastle/macs/hmac.dart";
-import "package:pointycastle/digests/sha256.dart";
-import "package:pointycastle/digests/sha512.dart";
-import "package:pointycastle/digests/ripemd160.dart";
-import "package:pointycastle/ecc/curves/secp256k1.dart";
-import "package:pointycastle/ecc/api.dart";
+import 'package:base58check/base58.dart';
+import 'package:convert/convert.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/macs/hmac.dart';
+import 'package:pointycastle/digests/sha256.dart';
+import 'package:pointycastle/digests/sha512.dart';
+import 'package:pointycastle/digests/ripemd160.dart';
+import 'package:pointycastle/ecc/curves/secp256k1.dart';
+import 'package:pointycastle/ecc/api.dart';
 // ignore: implementation_imports
-import "package:pointycastle/src/utils.dart" as utils;
+import 'package:pointycastle/src/utils.dart' as utils;
 
-import "exceptions.dart";
+import 'exceptions.dart';
 
 final sha256digest = SHA256Digest();
 final sha512digest = SHA512Digest();
@@ -24,7 +24,7 @@ final curve = ECCurve_secp256k1();
 
 /// Used for the Base58 encoding.
 const String alphabet =
-    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 /// From the specification (in bytes):
 /// 4 version
@@ -47,14 +47,14 @@ const int firstHardenedChild = 0x80000000;
 
 /// The 4 version bytes for the private key serialization as defined in the
 /// BIP21 spec
-final Uint8List privateKeyVersion = hex.decode("0488ADE4");
+final Uint8List privateKeyVersion = hex.decode('0488ADE4');
 
 /// The 4 version bytes for the public key serialization as defined in the
 /// BIP21 spec
-final Uint8List publicKeyVersion = hex.decode("0488B21E");
+final Uint8List publicKeyVersion = hex.decode('0488B21E');
 
 /// From the BIP32 spec. Used when calculating the hmac of the seed
-final Uint8List masterKey = utf8.encoder.convert("Bitcoin seed");
+final Uint8List masterKey = utf8.encoder.convert('Bitcoin seed');
 
 /// AKA 'point(k)' in the specification
 ECPoint publicKeyFor(BigInt d) {
@@ -68,8 +68,7 @@ Uint8List compressed(ECPoint q) {
 
 /// AKA 'ser_32(i)' in the specification
 Uint8List serializeTo4bytes(int i) {
-  ByteData bytes = ByteData(4);
-  bytes.setInt32(0, i, Endian.big);
+  var bytes = ByteData(4)..setInt32(0, i, Endian.big);
 
   return bytes.buffer.asUint8List();
 }
@@ -77,22 +76,22 @@ Uint8List serializeTo4bytes(int i) {
 /// CKDpriv in the specficiation
 ExtendedPrivateKey deriveExtendedPrivateChildKey(
     ExtendedPrivateKey parent, int childNumber) {
-  Uint8List message = childNumber >= firstHardenedChild
+  var message = childNumber >= firstHardenedChild
       ? _derivePrivateMessage(parent, childNumber)
       : _derivePublicMessage(parent.publicKey(), childNumber);
-  Uint8List hash = hmacSha512(parent.chainCode, message);
+  var hash = hmacSha512(parent.chainCode, message);
 
-  BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
+  var leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
 
-  BigInt childPrivateKey = (leftSide + parent.key) % curve.n;
+  var childPrivateKey = (leftSide + parent.key) % curve.n;
   if (childPrivateKey == BigInt.zero) {
     throw KeyZero();
   }
 
-  Uint8List chainCode = _rightFrom(hash);
+  var chainCode = _rightFrom(hash);
 
   return ExtendedPrivateKey(
     key: childPrivateKey,
@@ -110,15 +109,15 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
     throw InvalidChildNumber();
   }
 
-  Uint8List message = _derivePublicMessage(parent, childNumber);
-  Uint8List hash = hmacSha512(parent.chainCode, message);
+  var message = _derivePublicMessage(parent, childNumber);
+  var hash = hmacSha512(parent.chainCode, message);
 
-  BigInt leftSide = utils.decodeBigInt(_leftFrom(hash));
+  var leftSide = utils.decodeBigInt(_leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
 
-  ECPoint childPublicKey = publicKeyFor(leftSide) + parent.q;
+  var childPublicKey = publicKeyFor(leftSide) + parent.q;
   if (childPublicKey.isInfinity) {
     throw KeyInfinite();
   }
@@ -133,26 +132,25 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
 }
 
 Uint8List _paddedEncodedBigInt(BigInt i) {
-  Uint8List fullLength = Uint8List(lengthOfKey - 1);
-  Uint8List encodedBigInt = utils.encodeBigInt(i);
+  var fullLength = Uint8List(lengthOfKey - 1);
+  var encodedBigInt = utils.encodeBigInt(i);
   fullLength.setAll(fullLength.length - encodedBigInt.length, encodedBigInt);
 
   return fullLength;
 }
 
 Uint8List _derivePrivateMessage(ExtendedPrivateKey key, int childNumber) {
-  Uint8List message = Uint8List(37);
-  message[0] = 0;
-  message.setAll(1, _paddedEncodedBigInt(key.key));
-  message.setAll(33, serializeTo4bytes(childNumber));
+  var message = Uint8List(37)
+    ..setAll(1, _paddedEncodedBigInt(key.key))
+    ..setAll(33, serializeTo4bytes(childNumber));
 
   return message;
 }
 
 Uint8List _derivePublicMessage(ExtendedPublicKey key, int childNumber) {
-  Uint8List message = Uint8List(37);
-  message.setAll(0, compressed(key.q));
-  message.setAll(33, serializeTo4bytes(childNumber));
+  var message = Uint8List(37)
+    ..setAll(0, compressed(key.q))
+    ..setAll(33, serializeTo4bytes(childNumber));
 
   return message;
 }
@@ -160,7 +158,7 @@ Uint8List _derivePublicMessage(ExtendedPublicKey key, int childNumber) {
 /// This function returns a list of length 64. The first half is the key, the
 /// second half is the chain code.
 Uint8List hmacSha512(Uint8List key, Uint8List message) {
-  HMac hmac = HMac(sha512digest, 128)..init(KeyParameter(key));
+  var hmac = HMac(sha512digest, 128)..init(KeyParameter(key));
   return hmac.process(message);
 }
 
@@ -199,6 +197,31 @@ Uint8List sublist(Uint8List list, int start, int end) {
 
 /// Abstract class on which [ExtendedPrivateKey] and [ExtendedPublicKey] are based.
 abstract class ExtendedKey {
+  ExtendedKey({
+    this.version,
+    this.depth,
+    this.childNumber,
+    this.chainCode,
+    this.parentFingerprint,
+  });
+
+  /// Take a HD key serialized according to the spec and deserialize it.
+  ///
+  /// Works for both private and public keys.
+  factory ExtendedKey.deserialize(String key) {
+    var decodedKey = Base58Codec(alphabet).decode(key);
+    if (decodedKey.length != lengthOfSerializedKey + lengthOfChecksum) {
+      throw InvalidKeyLength(
+          decodedKey.length, lengthOfSerializedKey + lengthOfChecksum);
+    }
+
+    if (equal(decodedKey.getRange(0, 4), privateKeyVersion)) {
+      return ExtendedPrivateKey.deserialize(decodedKey);
+    }
+
+    return ExtendedPublicKey.deserialize(decodedKey);
+  }
+
   /// 32 bytes
   Uint8List chainCode;
 
@@ -212,31 +235,6 @@ abstract class ExtendedKey {
   /// 4 bytes
   Uint8List parentFingerprint;
 
-  ExtendedKey({
-    this.version,
-    this.depth,
-    this.childNumber,
-    this.chainCode,
-    this.parentFingerprint,
-  });
-
-  /// Take a HD key serialized according to the spec and deserialize it.
-  ///
-  /// Works for both private and public keys.
-  factory ExtendedKey.deserialize(String key) {
-    List<int> decodedKey = Base58Codec(alphabet).decode(key);
-    if (decodedKey.length != lengthOfSerializedKey + lengthOfChecksum) {
-      throw InvalidKeyLength(
-          decodedKey.length, lengthOfSerializedKey + lengthOfChecksum);
-    }
-
-    if (equal(decodedKey.getRange(0, 4), privateKeyVersion)) {
-      return ExtendedPrivateKey.deserialize(decodedKey);
-    }
-
-    return ExtendedPublicKey.deserialize(decodedKey);
-  }
-
   /// Returns the first 4 bytes of the hash160 compressed public key.
   Uint8List get fingerprint;
 
@@ -246,15 +244,14 @@ abstract class ExtendedKey {
   ExtendedPublicKey publicKey();
 
   List<int> _serialize() {
-    List<int> serialization = List<int>();
-    serialization.addAll(version);
-    serialization.add(depth);
-    serialization.addAll(parentFingerprint);
-    serialization.addAll(serializeTo4bytes(childNumber));
-    serialization.addAll(chainCode);
-    serialization.addAll(_serializedKey());
-
-    return serialization;
+    return [
+      ...version,
+      depth,
+      ...parentFingerprint,
+      ...serializeTo4bytes(childNumber),
+      ...chainCode,
+      ..._serializedKey()
+    ];
   }
 
   List<int> _serializedKey();
@@ -274,8 +271,7 @@ abstract class ExtendedKey {
   /// written to disk for future deserializion.
   @override
   String toString() {
-    List<int> payload = _serialize();
-    payload.addAll(_checksum());
+    var payload = _serialize()..addAll(_checksum());
 
     return Base58Codec(alphabet).encode(payload);
   }
@@ -288,8 +284,6 @@ abstract class ExtendedKey {
 /// Note that the spec talks about a 'neutered' key, this is the public key
 /// associated with a private key.
 class ExtendedPrivateKey extends ExtendedKey {
-  BigInt key;
-
   ExtendedPrivateKey({
     this.key,
     int depth,
@@ -305,7 +299,7 @@ class ExtendedPrivateKey extends ExtendedKey {
 
   ExtendedPrivateKey.master(Uint8List seed)
       : super(version: privateKeyVersion) {
-    Uint8List hash = hmacSha512(masterKey, seed);
+    var hash = hmacSha512(masterKey, seed);
     key = utils.decodeBigInt(_leftFrom(hash));
     chainCode = _rightFrom(hash);
     depth = 0;
@@ -330,6 +324,8 @@ class ExtendedPrivateKey extends ExtendedKey {
     return extendedPrivateKey;
   }
 
+  BigInt key;
+
   @override
   ExtendedPublicKey publicKey() {
     return ExtendedPublicKey(
@@ -346,9 +342,9 @@ class ExtendedPrivateKey extends ExtendedKey {
 
   @override
   List<int> _serializedKey() {
-    Uint8List serialization = Uint8List(lengthOfKey);
+    var serialization = Uint8List(lengthOfKey);
     serialization[0] = 0;
-    Uint8List encodedKey = _paddedEncodedBigInt(key);
+    var encodedKey = _paddedEncodedBigInt(key);
     serialization.setAll(1, encodedKey);
 
     return serialization.toList();
@@ -360,8 +356,6 @@ class ExtendedPrivateKey extends ExtendedKey {
 /// In the lingo of the spec this is a `(K, c)`.
 /// This can be used to generate further public child keys only.
 class ExtendedPublicKey extends ExtendedKey {
-  ECPoint q;
-
   ExtendedPublicKey({
     this.q,
     depth,
@@ -391,9 +385,11 @@ class ExtendedPublicKey extends ExtendedKey {
     return extendedPublickey;
   }
 
+  ECPoint q;
+
   @override
   Uint8List get fingerprint {
-    Uint8List identifier = hash160(compressed(q));
+    var identifier = hash160(compressed(q));
     return Uint8List.view(identifier.buffer, 0, 4);
   }
 
@@ -412,12 +408,13 @@ class ExtendedPublicKey extends ExtendedKey {
   }
 }
 
+//ignore_for_file: avoid_print
 void debug(List<int> payload) {
-  print("version: ${payload.getRange(0, 4)}");
-  print("depth: ${payload.getRange(4, 5)}");
-  print("parent fingerprint: ${payload.getRange(5, 9)}");
-  print("childNumber: ${payload.getRange(9, 13)}");
-  print("chaincode: ${payload.getRange(13, 46)}");
-  print("key: ${payload.getRange(46, 78)}");
-  print("checksum: ${payload.getRange(78, 82)}");
+  print('version: ${payload.getRange(0, 4)}');
+  print('depth: ${payload.getRange(4, 5)}');
+  print('parent fingerprint: ${payload.getRange(5, 9)}');
+  print('childNumber: ${payload.getRange(9, 13)}');
+  print('chaincode: ${payload.getRange(13, 46)}');
+  print('key: ${payload.getRange(46, 78)}');
+  print('checksum: ${payload.getRange(78, 82)}');
 }
